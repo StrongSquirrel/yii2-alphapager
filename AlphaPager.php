@@ -11,6 +11,7 @@ namespace sjaakp\alphapager;
 
 use yii\base\Widget;
 use yii\base\InvalidConfigException;
+use yii\db\ActiveQuery;
 use yii\helpers\Html;
 use Yii;
 
@@ -27,6 +28,11 @@ class AlphaPager extends Widget {
      * Set this to [] if you don't want an 'all' button.
      */
     public $preButtons = [ 'all' ];
+
+    /**
+     * @var ActiveQuery
+     */
+    public $query;
 
     /**
      * @var array - page values of buttons which should appear right of the alphabetical buttons
@@ -89,13 +95,19 @@ class AlphaPager extends Widget {
 
         $buttons = array_map(function($p) use ($pager, $current) {
             $p = (string) $p;
-            return $pager->renderPageButton($p, $p === $current);
+            $query = clone $pager->query;
+
+            return $pager->renderPageButton(
+                $p,
+                $p === $current,
+                $query->andWhere(['like', $pager->dataProvider->alphaAttribute, $p . '%', false])->count() > 0
+            );
         }, $pages);
 
         echo Html::tag('ul', implode("\n", $buttons), $this->options);
     }
 
-    protected function renderPageButton($page, $active)
+    protected function renderPageButton($page, $active, $renderLink = true)
     {
         $label = $this->dataProvider->getAlphaLabel($page, $this->lowerCase);
 
@@ -107,6 +119,11 @@ class AlphaPager extends Widget {
         }
         $linkOptions = $this->linkOptions;
         $linkOptions['data-page'] = $page;
-        return Html::tag('li', Html::a($label, $this->dataProvider->createUrl($page), $linkOptions), $options);
+
+        if ($renderLink) {
+            $label = Html::a($label, $this->dataProvider->createUrl($page), $linkOptions);
+        }
+
+        return Html::tag('li', $label, $options);
     }
 }
