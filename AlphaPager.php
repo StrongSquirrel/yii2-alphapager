@@ -15,7 +15,8 @@ use yii\db\ActiveQuery;
 use yii\helpers\Html;
 use Yii;
 
-class AlphaPager extends Widget {
+class AlphaPager extends Widget
+{
 
     /**
      * @var ActiveDataProvider|ArrayDataProvider that this pager is associated with.
@@ -27,7 +28,7 @@ class AlphaPager extends Widget {
      * @var array - page values of buttons which should appear left of the alphabetical buttons
      * Set this to [] if you don't want an 'all' button.
      */
-    public $preButtons = [ 'all' ];
+    public $preButtons = ['all'];
 
     /**
      * @var ActiveQuery
@@ -38,8 +39,7 @@ class AlphaPager extends Widget {
      * @var array - page values of buttons which should appear right of the alphabetical buttons
      * Set this to [] if you don't want a '#' (non-alphabetic) button.
      */
-    public $postButtons = [ 'symbol' ];
-
+    public $postButtons = ['symbol'];
 
 //    public $digits = false;
 
@@ -69,13 +69,15 @@ class AlphaPager extends Widget {
      */
     public $activePageCssClass = 'active';
 
-    public function init()  {
-        if (! $this->dataProvider) {
+    public function init()
+    {
+        if (!$this->dataProvider) {
             throw new InvalidConfigException('AlphaPager::dataProvider must be set.');
         }
     }
 
-    public function run()   {
+    public function run()
+    {
         $digits = $this->dataProvider->alphaDigits;
 
         if ($digits == 'full') {
@@ -93,15 +95,17 @@ class AlphaPager extends Widget {
         $current = $this->dataProvider->page;
         $pager = $this;
 
-        $buttons = array_map(function($p) use ($pager, $current) {
-            $p = (string) $p;
-            $query = clone $pager->query;
+        $buttons = array_map(function ($p) use ($pager, $current) {
+            $p = (string)$p;
+            if ($pager->query !== null) {
+                $query = clone $pager->query;
+                $renderLink = $query->andWhere(['like', $pager->dataProvider->alphaAttribute, $p . '%', false])
+                        ->count() > 0;
+            } else {
+                $renderLink = true;
+            }
 
-            return $pager->renderPageButton(
-                $p,
-                $p === $current,
-                $query->andWhere(['like', $pager->dataProvider->alphaAttribute, $p . '%', false])->count() > 0
-            );
+            return $pager->renderPageButton($p, $p === $current, $renderLink);
         }, $pages);
 
         echo Html::tag('ul', implode("\n", $buttons), $this->options);
@@ -111,7 +115,9 @@ class AlphaPager extends Widget {
     {
         $label = $this->dataProvider->getAlphaLabel($page, $this->lowerCase);
 
-        if ($label === false) return '';
+        if ($label === false) {
+            return '';
+        }
 
         $options = $this->buttonOptions;
         if ($active) {
